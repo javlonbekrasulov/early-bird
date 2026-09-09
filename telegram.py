@@ -21,6 +21,7 @@ def send_message(text: str):
             response = requests.post(url, json={
                 "chat_id": CHAT_ID,
                 "text": chunk,
+                "parse_mode": "HTML",
                 "disable_web_page_preview": False,
             }, timeout=15)
             response.raise_for_status()

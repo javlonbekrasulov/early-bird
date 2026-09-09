@@ -11,6 +11,7 @@ Pipeline:
    separate error alert, but doesn't stop the other sites.
 """
 
+import html
 import json
 from datetime import date
 
@@ -29,7 +30,7 @@ def main():
     db.init_db()
     sites = load_sites()
 
-    digest_sections = []  # one text block per site with new posts
+    digest_sections = []
     error_alerts = []     # separate messages for sites that failed
 
     for site in sites:
@@ -37,7 +38,6 @@ def main():
         posts = fetch_posts(site)
 
         if not posts:
-            # fetch_posts already printed a [WARN]. Treat this as a possible scraping break and alert you
             error_alerts.append(
                 f"⚠️ {name}: got 0 posts this run. The site's HTML "
                 f"structure may have changed -- selectors in sites.json "
@@ -48,9 +48,6 @@ def main():
         last_seen = db.get_last_seen_date(name)
 
         if last_seen is None:
-            # First time ever checking this site. Don't dump the
-            # entire post history as "new" -- just record today's
-            # newest date as the baseline and start fresh next run.
             newest = max(p["post_date"] for p in posts)
             db.update_last_seen_date(name, newest)
             print(f"[INFO] {name}: first run, baseline set to {newest}. "
@@ -63,7 +60,7 @@ def main():
             lines = [f"📌 From: {name}\n"]
             for post in new_posts:
                 summary = summarize_post(post["title"])
-                lines.append(f"- {summary}\n LINK: {post['link']}")
+                lines.append(f"- {html.escape(summary)} --> <a href=\"{post['link']}\">LINK</a>")
             digest_sections.append("\n".join(lines))
 
             newest = max(p["post_date"] for p in new_posts)
